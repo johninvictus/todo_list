@@ -21,14 +21,15 @@ defmodule TodoList.TodoServer do
   end
 
   @impl GenServer
-  def handle_cast({:add_entry, entry}, {name, todos}) do
-    new_state = Todos.add_entry(todos, entry)
-    Database.store(name, new_state)
-    {:noreply, new_state}
+  def handle_cast({:add_entry, entry}, {name, todo_list}) do
+    new_list = Todos.add_entry(todo_list, entry)
+    Database.store(name, new_list)
+
+    {:noreply, {name, new_list}}
   end
 
   @impl GenServer
-  def handle_call(:todos, _from, todos) do
-    {:reply, todos, todos}
+  def handle_call(:todos, _from, {name, todos}) do
+    {:reply, todos, {name, todos}}
   end
 end

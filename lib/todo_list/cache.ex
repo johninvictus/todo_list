@@ -40,7 +40,7 @@ defmodule TodoList.Cache do
 
   @impl GenServer
   def handle_info(:start_db, state) do
-    Database.start("./persist/")
+    Database.start()
     {:noreply, state}
   end
 end

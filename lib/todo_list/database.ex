@@ -1,53 +1,47 @@
 defmodule TodoList.Database do
   use GenServer
 
-  @name __MODULE__
   @db_folder "./persist"
 
-  def start(db_folder) do
-    GenServer.start(__MODULE__, db_folder, name: @name)
+  def start do
+    GenServer.start(__MODULE__, nil, name: __MODULE__)
   end
 
   def store(key, data) do
-    GenServer.call(@name, {:store, key, data})
+    GenServer.cast(__MODULE__, {:store, key, data})
   end
 
   def get(key) do
-    GenServer.call(@name, {:get, key})
+    GenServer.call(__MODULE__, {:get, key})
   end
 
   @impl GenServer
-  def init(db_folder) do
-    # create folder
-    send(self(), {:create_folder, db_folder})
-
-    {:ok, db_folder}
+  def init(_) do
+    File.mkdir_p!(@db_folder)
+    {:ok, nil}
   end
 
   @impl GenServer
-  def handle_info({:create_folder, db_folder}, db_folder) do
-    File.mkdir_p(db_folder)
-    {:noreply, db_folder}
-  end
-
-  @impl GenServer
-  def handle_cast({:store, key, data}, db_folder) do
-    file_name(key)
+  def handle_cast({:store, key, data}, state) do
+    key
+    |> file_name()
     |> File.write!(:erlang.term_to_binary(data))
 
-    {:noreply, db_folder}
+    {:noreply, state}
   end
 
   @impl GenServer
-  def handle_call({:get, key}, _from, db_folder) do
+  def handle_call({:get, key}, _, state) do
     data =
       case File.read(file_name(key)) do
         {:ok, contents} -> :erlang.binary_to_term(contents)
         _ -> nil
       end
 
-    {:reply, data, db_folder}
+    {:reply, data, state}
   end
 
-  defp file_name(key), do:  Path.join(@db_folder, to_string(key))
+  defp file_name(key) do
+    Path.join(@db_folder, to_string(key))
+  end
 end

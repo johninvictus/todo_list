@@ -1,10 +1,10 @@
 defmodule TodoList.TodoServer do
   use GenServer
 
-  alias TodoList.{Todos}
+  alias TodoList.{Todos, Database}
 
-  def start_link do
-    GenServer.start_link(__MODULE__, :ok)
+  def start_link(name) do
+    GenServer.start_link(__MODULE__, name)
   end
 
   def add_entry(todo_server, entry) do
@@ -16,13 +16,14 @@ defmodule TodoList.TodoServer do
   end
 
   @impl GenServer
-  def init(_) do
-    {:ok, Todos.new()}
+  def init(name) do
+    {:ok, {name, Database.get(name) || Todos.new()}}
   end
 
   @impl GenServer
-  def handle_cast({:add_entry, entry}, todos) do
+  def handle_cast({:add_entry, entry}, {name, todos}) do
     new_state = Todos.add_entry(todos, entry)
+    Database.store(name, new_state)
     {:noreply, new_state}
   end
 

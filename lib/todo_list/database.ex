@@ -2,12 +2,13 @@ defmodule TodoList.Database do
   use GenServer
 
   @name __MODULE__
+  @db_folder "./persist"
 
   def start(db_folder) do
     GenServer.start(__MODULE__, db_folder, name: @name)
   end
 
-  def store({key, data}) do
+  def store(key, data) do
     GenServer.call(@name, {:store, key, data})
   end
 
@@ -31,7 +32,7 @@ defmodule TodoList.Database do
 
   @impl GenServer
   def handle_cast({:store, key, data}, db_folder) do
-    file_name(db_folder, key)
+    file_name(key)
     |> File.write!(:erlang.term_to_binary(data))
 
     {:noreply, db_folder}
@@ -40,7 +41,7 @@ defmodule TodoList.Database do
   @impl GenServer
   def handle_call({:get, key}, _from, db_folder) do
     data =
-      case File.read(file_name(db_folder, key)) do
+      case File.read(file_name(key)) do
         {:ok, contents} -> :erlang.binary_to_term(contents)
         _ -> nil
       end
@@ -48,5 +49,5 @@ defmodule TodoList.Database do
     {:reply, data, db_folder}
   end
 
-  defp file_name(db_folder, key), do: "#{db_folder}/#{key}"
+  defp file_name(key), do:  Path.join(@db_folder, to_string(key))
 end

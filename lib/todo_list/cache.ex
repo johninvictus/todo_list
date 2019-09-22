@@ -1,7 +1,7 @@
 defmodule TodoList.Cache do
   use GenServer
 
-  alias TodoList.{TodoServer}
+  alias TodoList.{TodoServer, Database}
 
   @moduledoc """
    This module will be used to store todo list pid,
@@ -20,6 +20,9 @@ defmodule TodoList.Cache do
 
   @impl GenServer
   def init(_) do
+    # start db and use it in server
+    send self(), :start_db
+
     {:ok, %{}}
   end
 
@@ -30,8 +33,14 @@ defmodule TodoList.Cache do
         {:reply, todo_server, todo_servers}
 
       :error ->
-        server = TodoServer.start_link()
+        server = TodoServer.start_link(todo_list_name)
         {:reply, server, Map.put(todo_servers, todo_list_name, server)}
     end
+  end
+
+  @impl GenServer
+  def handle_info(:start_db, state) do
+    Database.start()
+    {:noreply, state}
   end
 end
